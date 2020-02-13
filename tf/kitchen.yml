@@ -1,0 +1,38 @@
+---
+driver:
+  name: terraform
+  command_timeout: 1800
+  variable_files:
+    - priv.tfvars
+
+provisioner:
+  name: terraform
+
+verifier:
+  name: terraform
+  format: yaml
+  systems:
+    - name: default
+      backend: ssh
+      # Use the TF generated key
+      key_files:
+        - ephemeral.pem
+      # Use TF generated user
+      user: centos
+      # Get omnibus builder address from TF outputs
+      hosts_output: omnibus_private_ip
+#      sudo: true
+#      proxy_command: ssh -i ephemeral.pem -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null centos@bootstrap_bastion.bobchaos.net -W %h:%p
+      # There's no way (that I found) to pass the domain name from TF
+      # So the bastion_host may need to be overridden in a kitchen.local
+      bastion_host: bootstrap_bastion.bobchaos.net
+      bastion_user: centos
+      bastion_key: ephemeral.pem
+      controls:
+        - default
+
+platforms:
+  - name: "aws"
+
+suites:
+  - name: default

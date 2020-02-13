@@ -1,0 +1,26 @@
+# Since all assets are created with dynamic names, we use inspec inputs
+# to have kitchen-tf report the names to inspec
+name: bootstrap_tests
+title: Test Chef Infra bootstrap operations
+version: 0.1.0
+#depends:
+#  - name: inspec-aws
+#    url: https://github.com/inspec/inspec-aws/archive/v1.6.1.tar.gz
+#supports:
+#  - platform: aws
+
+attributes:
+  - name: server_private_dns
+    type: string
+    required: true
+    description: From TF state, private IP of the Chef Infra Server to bootstrap to
+
+  - name: nix_nodes
+    type: array
+    required: true
+    description: From TF state, array of Unix-like systems IP addresses to bootstrap
+
+  - name: win_nodes
+    type: array
+    required: true
+    description: From TF state, array of Windows systems IP addresses to bootstrap
