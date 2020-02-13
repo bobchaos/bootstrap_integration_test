@@ -8,13 +8,20 @@ It should be treated as a prototype at this time.
 
 Before you begin, ensure you have configured ~/.aws/credentials with an IAM user with R/W prvileges over EC2, IAM, STS:AssumeRole, Route53 and S3.
 
-Everything is wrapped by test kitchen.
+All the following instructions are assumed to use the repo's root as starting CWD.
+
+Everything is wrapped by test kitchen. To get it and other dependencies:
+
+```ruby
+cd tf
+bundle install
+```
 
 To run the test, you'll need to generate a new Chef Infra policy artifact by editing `cookbooks/chef_omnibus/Policyfile.rb`. Afterwards, run `cd cookbooks/chef_omnibus && chef update && chef export Policyfile.rb -a ../../tf/policy_artifacts`
 
 Next, we need to create `./tf/priv.tfvars` with your `r53_zone_id` and `omnibus_policy_artifact`.
 
-Assuming you're at the repo's root, you can then run:
+You can then run:
 
 ```shell
 cd ./tf
