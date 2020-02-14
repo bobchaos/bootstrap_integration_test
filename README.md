@@ -21,6 +21,8 @@ To run the test, you'll need to generate a new Chef Infra policy artifact by edi
 
 Next, we need to create `./tf/priv.tfvars` with your `r53_zone_id` and `omnibus_policy_artifact`.
 
+Finally, in a kitchen.local.yml, override the bastion's domain to match your `r53_zone_id`. That value sadly cannot be imported from TF State by kitchen-tf, so we generate a predictable record for it.
+
 You can then run:
 
 ```shell
@@ -40,7 +42,7 @@ The omnibus nodes are managed by (angry)chef and therefor should function pretty
 
 ## Known issues, caveats, TODOs, etc...
 
-As of this writting it only spawns 2 sample Linux nodes, and a single Windows node. It doesn't actually try to bootstrap the Windows node yet.
+As of this writting it only spawns 2 sample Linux nodes, and a single Windows node.
 
 Similarly, we only build Chef Infra Client on CentOS, having additional omnibus builders on other OS could have value.
 

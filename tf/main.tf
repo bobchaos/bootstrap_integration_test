@@ -6,10 +6,11 @@ provider "aws" {
 }
 
 locals {
-  tags        = merge({ Terraform = "true" }, var.tags)
-  nix_ami_ids = [data.aws_ami.nix_os_0.id, data.aws_ami.nix_os_1.id]
-  nix_nodes   = [aws_instance.nix_nodes[*].private_ip]
-  win_nodes   = [aws_instance.win_nodes[*].private_ip]
+  tags          = merge({ Terraform = "true" }, var.tags)
+  nix_ami_ids   = [data.aws_ami.nix_os_0.id, data.aws_ami.nix_os_1.id]
+  nix_nodes     = [aws_instance.nix_nodes[*].private_ip]
+  win_passwords = [for p in aws_instance.win_nodes[*].password_data : rsadecrypt(p, tls_private_key.ephemeral.private_key_pem)]
+  win_nodes     = zipmap(aws_instance.win_nodes[*].private_ip, local.win_passwords)
 }
 
 # First we setup all networking related concerns, like a VPC and default security groups.
@@ -94,7 +95,7 @@ resource "aws_s3_bucket" "static_assets" {
   }
 }
 
-# A self-healing bastion
+# A bastion
 resource aws_security_group "bastion" {
   name_prefix = "bastion"
   description = "Allows external ssh"
@@ -316,7 +317,7 @@ resource aws_instance "win_nodes" {
   key_name               = aws_key_pair.ephemeral.key_name
   subnet_id              = module.main_vpc.private_subnets[0]
   vpc_security_group_ids = [aws_security_group.nodes.id]
-  user_data              = file("files/enable_winrm.bat")
+  user_data              = base64encode(file("files/enable_winrm.bat"))
   get_password_data      = true
   root_block_device {
     delete_on_termination = true

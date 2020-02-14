@@ -58,3 +58,6 @@ cookbooks/*/test/fixtures/policyfiles/*.lock.json
 
 # Include tfplan files to ignore the plan output of command: terraform plan -out=tfplan
 **/*tfplan*
+
+# Generated keys
+tf/ephemeral.pem

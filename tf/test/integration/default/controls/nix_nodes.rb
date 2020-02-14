@@ -1,11 +1,7 @@
-# Default controls for bob's infra experiments
+# Default controls for bootstrap tests
 
-# Notes on absent resources: Some resources are tested upstream, while others are tested
-# implicitely by others; For example, the main VPC module is tested upstream, and retesting
-# it here would provide little to no value.
-
-control 'default' do
-  desc 'Test bootstrap operations'
+control 'bootstrap_nix_nodes' do
+  desc 'Test bootstrap operations on nix nodes'
 
   attribute('nix_nodes').each do |node_ip|
     # I don't know why this second loop is required, but it is :/
