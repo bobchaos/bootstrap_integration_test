@@ -3,6 +3,9 @@
 name: bootstrap_tests
 title: Test Chef Infra bootstrap operations
 version: 0.1.0
+depends:
+  - name: inspec-aws
+    url: https://github.com/inspec/inspec-aws/archive/v1.6.1.tar.gz
 
 attributes:
   - name: server_private_dns
@@ -18,4 +21,29 @@ attributes:
   - name: win_nodes
     type: hash
     required: true
-    description: From TF state, array of Windows systems IP addresses to bootstrap
+    description: From TF state, array of Windows systems IP addresses to bootstrap, with passwords
+
+  - name: centos_omnibus_instance_id
+    type: string
+    required: true
+    description: From TF state, the ID of the centos omnibus builder
+
+  - name: chef_server_instance_id
+    type: string
+    required: true
+    description: From TF state, the ID of the chef-server node
+
+  - name: omnibus_sg_ids
+    type: array
+    required: true
+    description: From TF state, the ID of the omnibus nodes security group
+
+  - name: chef_server_sg_ids
+    type: array
+    required: true
+    description: From TF state, the ID of the omnibus nodes security group
+
+  - name: all_vpc_subnet_cidrs
+    type: array
+    required: true
+    description: From TF state, a list of all CIDRs in use by the VPC

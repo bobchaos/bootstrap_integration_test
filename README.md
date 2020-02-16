@@ -17,17 +17,17 @@ cd tf
 bundle install
 ```
 
-To run the test, you'll need to generate a new Chef Infra policy artifact by editing `cookbooks/chef_omnibus/Policyfile.rb`. Afterwards, run `cd cookbooks/chef_omnibus && chef update && chef export Policyfile.rb -a ../../tf/policy_artifacts`
+Next, we need to create `./tf/priv.tfvars` with your `r53_zone_id`. You can also set `omnibus_policy_artifact` if you want to run your own omnibus builder cookbook, or even s cookbook that substitutes the build with pulling and installing a pre-built artifact.
 
-Next, we need to create `./tf/priv.tfvars` with your `r53_zone_id` and `omnibus_policy_artifact`.
+If need be, you can also set your `chef_repo_url` and `chef_repo_branch` in `./tf/priv.tfvars` to build from your desired ref.
 
 Finally, in a kitchen.local.yml, override the bastion's domain to match your `r53_zone_id`. That value sadly cannot be imported from TF State by kitchen-tf, so we generate a predictable record for it.
 
-You can then run:
+With this one-time setup complete, you can then run:
 
 ```shell
 cd ./tf
-kitchen test
+bundle exec kitchen test
 ```
 
 ## Adding new test nodes
@@ -46,13 +46,9 @@ As of this writting it only spawns 2 sample Linux nodes, and a single Windows no
 
 Similarly, we only build Chef Infra Client on CentOS, having additional omnibus builders on other OS could have value.
 
-The infra itself could use some inspec-aws tests, it's got a lot of moving pieces.
-
 The current code is very inflexible, but making more parameters into variables can address a lot of that.
 
 The chef-server and chef_omnibus nodes rely heavily on inflexible bash scripts fed to cloud-init. Borrowing some tricks from Chef's bash scripts could help (like the do_download function and it's "childs" in mixlib-install's install.sh).
-
-Having to generate a policy artifact for every branch is a problem. It could be addressed by having TF perform the cloning via cloud-init, so we could make the branch/ref a TF var.
 
 Adding new test nodes requires lots of nasty copy/pasting, a better system could be designed using TF12's new features, or simply by managing the AMI list externally or manually.
 

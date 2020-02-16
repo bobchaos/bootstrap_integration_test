@@ -28,6 +28,12 @@ suites:
         toolchain_channel: stable
         toolchain_version: latest
         install_dir: /opt/chef
+    lifecycle:
+      # simulate Terraform installing git and cloning repo
+      pre_converge:
+        - remote: |
+            sudo yum install -y git;
+            git clone https://github.com/chef/chef.git /home/centos/chef;
     verifier:
       inspec_tests:
         - test/integration/default

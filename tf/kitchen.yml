@@ -12,6 +12,11 @@ verifier:
   name: terraform
   format: yaml
   systems:
+    - name: infra
+      backend: aws
+      controls:
+        - infra
+
     - name: default
       backend: ssh
       # Use the TF generated key
@@ -20,7 +25,7 @@ verifier:
       # Use TF generated user
       user: centos
       # Get omnibus builder address from TF outputs
-      hosts_output: omnibus_private_ip
+      hosts_output: centos_omnibus_private_ip
       # There's sadly no "bastion_host_output" :/
       bastion_host: bootstrap_bastion.bobchaos.net
       bastion_user: centos

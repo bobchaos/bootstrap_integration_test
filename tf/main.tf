@@ -11,6 +11,7 @@ locals {
   nix_nodes     = [aws_instance.nix_nodes[*].private_ip]
   win_passwords = [for p in aws_instance.win_nodes[*].password_data : rsadecrypt(p, tls_private_key.ephemeral.private_key_pem)]
   win_nodes     = zipmap(aws_instance.win_nodes[*].private_ip, local.win_passwords)
+  all_vpc_subnet_cidrs = concat(module.main_vpc.private_subnets_cidr_blocks, module.main_vpc.public_subnets_cidr_blocks)
 }
 
 # First we setup all networking related concerns, like a VPC and default security groups.
@@ -246,7 +247,10 @@ resource aws_instance "omnibus" {
   # Wait for cloud-init to complete before moving on to Inspec
   provisioner "remote-exec" {
     inline = [
+      "set -e",
       "chmod 0600 /tmp/ephemeral.pem",
+      "sudo yum install -y git",
+      "git clone --depth 1 -b ${var.chef_repo_branch} ${var.chef_repo_url} /home/centos/chef",
       "until [[ -e /var/lib/cloud/instance/boot-finished ]]; do",
       "sleep 5",
       "done",
