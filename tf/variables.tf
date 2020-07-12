@@ -8,7 +8,6 @@ variable "tags" {
 variable "omnibus_zero_package" {
   type        = string
   description = "Name of the package that will be retrieved from our bucket by the omnibus builder. It must match the name of you package under `policy_artifacts/`"
-  default     = "chef_omnibus_builder-0ed5efdccf1ee09126f38215a5f66500c43a6b62eade50f58dfa4c7a55acaf13.tgz"
 }
 
 variable "r53_zone_id" {

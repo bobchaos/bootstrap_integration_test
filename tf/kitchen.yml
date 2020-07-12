@@ -4,6 +4,7 @@ driver:
   command_timeout: 1800
   variable_files:
     - priv.tfvars
+    - auto.tfvars
 
 provisioner:
   name: terraform

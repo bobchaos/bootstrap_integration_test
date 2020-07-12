@@ -11,7 +11,7 @@ curl -L https://omnitruck.chef.io/install.sh | sudo bash -s -- -P angrychef
 
 # Get the zero package from S3
 /usr/local/bin/aws s3 cp s3://${bucket_name}/${zero_package} .
-tar -xf ./${zero_package}
+unzip ./${zero_package}
 
 # Run the package with angrychef, since it's building chef
 CHEF_LICENSE="accept-no-persist" /opt/angrychef/bin/chef-client -z
