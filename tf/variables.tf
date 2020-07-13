@@ -26,3 +26,8 @@ variable "chef_repo_branch" {
   description = "The Chef branch to build"
   default = "master"
 }
+
+variable "win_omnibus_override_pw" {
+  type = string
+  description = "A password for the Windows omnibus builder"
+}

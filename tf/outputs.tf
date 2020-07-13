@@ -47,3 +47,13 @@ output "all_vpc_subnet_cidrs" {
   value = local.all_vpc_subnet_cidrs
   description = "All CIDR blocks used in the VPC"
 }
+
+output "win_omnibus_r53_record_fqdn" {
+  value = aws_route53_record.win_omnibus.fqdn
+  description = "FQDN of the Windows Omnibus node"
+}
+
+output "win_omnibus_pw" {
+  value = local.win_omnibus_pw
+  description = "Decrypted password for the Windows Omnibus node. This infra won't be up for long :P"
+}

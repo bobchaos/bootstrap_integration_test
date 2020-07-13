@@ -24,3 +24,7 @@ CHEF_LICENSE="accept-no-persist" /opt/angrychef/bin/chef-client -z
 mkdir -p /home/centos/.chef/
 mv /tmp/zero_package/.chef/trusted_certs /home/centos/.chef/
 chown -R centos:centos /home/centos/.chef
+
+# Get git and clone the repo we'll be building
+sudo yum install -y git
+git clone --depth 1 -b ${var.chef_repo_branch} ${var.chef_repo_url} /home/centos/chef

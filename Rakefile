@@ -5,11 +5,18 @@ require 'chef-cli/policyfile_services/install'
 require 'chef-cli/ui'
 require 'ffi_yajl'
 require 'zip'
+require 'securerandom'
 
+# Some common vars
 policyfile_path = "#{__dir__}/cookbooks/chef_omnibus/Policyfile.rb"
 policy_lockfile_path = "#{__dir__}/cookbooks/chef_omnibus/Policyfile.lock.json"
 exported_policy_dir = "#{__dir__}/exported_policy"
 tf_policy_artifacts = "#{__dir__}/tf/policy_artifacts"
+tfvars_path = 'tf/rake.auto.tfvars'
+priv_tfvars_path = 'tf/priv.auto.tfvars'
+
+# Tie everything together and run the test
+task :run => %w(package_policy win_omnibus_pw_gen run_kitchen)
 
 # Export the policyfile of the omnibus cookbook and zip the results
 # Older versions of Windows don't support tar (without shenanigans)
@@ -55,9 +62,36 @@ task :zip_policy do
       end
     end
   end
-  tfvars_path = 'tf/auto.tfvars'
-  contents = File.read(tfvars_path)
-  new_contents = contents.gsub(%r(omnibus_zero_package = .*), "omnibus_zero_package = \"#{package_name}\"")
 
-  File.open(tfvars_path, "w") {|file| file.puts new_contents }
+  new_line = "omnibus_zero_package = \"#{package_name}\""
+  begin
+    contents = File.read(tfvars_path)
+
+    new_contents = contents.gsub(%r(omnibus_zero_package = .*), new_line)
+    File.write(tfvars_path, new_contents)
+  rescue Errno::ENOENT
+    File.write(tfvars_path, new_line)
+  end
+
+end
+
+# kitchen-tf can't pass a WinRM password as attribute to the Inspec verifier currently
+# This job generates a password and writes it to a gitignored file where TF and kitchen will read it
+task :win_omnibus_pw_gen do
+  pw = SecureRandom.urlsafe_base64(22)
+  password_line = "win_omnibus_override_pw = \"#{pw}\""
+  begin
+    contents = File.read(priv_tfvars_path)
+
+    new_contents = contents.gsub(%r(win_omnibus_override_pw = .*), password_line)
+    File.write(priv_tfvars_path, new_contents)
+  rescue Errno::ENOENT
+    File.write(priv_tfvars_path, password_line)
+  end
+end
+
+task :run_kitchen do
+  Dir.chdir("#{__dir__}/tf") do
+    `bundle exec kitchen test`
+  end
 end

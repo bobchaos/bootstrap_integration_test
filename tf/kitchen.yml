@@ -4,7 +4,8 @@ driver:
   command_timeout: 1800
   variable_files:
     - priv.tfvars
-    - auto.tfvars
+    - rake.auto.tfvars
+    - priv.auto.tfvars
 
 provisioner:
   name: terraform
@@ -34,6 +35,20 @@ verifier:
       controls:
         - bootstrap_nix_nodes
         - bootstrap_win_nodes
+
+    - name: windows
+      backend: winrm
+      user: Administrator
+      # No native support for passwords in kitchen-tf, but plain old kitchen has us covered
+      <% pw_line = File.new("priv.auto.tfvars", "r").readlines.select { |l| l.match?("win_omnibus_override_pw =") } %>
+      <% pw = pw_line[0].scan(/"([^"]*)"/) %>
+      password: <%= pw[0][0] %>
+      # Get omnibus builder address from TF outputs
+      hosts_output: win_omnibus_r53_record_fqdn
+      # There's sadly no "bastion_host_output" :/
+      controls:
+        - win_bootstrap_nix_nodes
+        - win_bootstrap_win_nodes
 
 platforms:
   - name: "aws"

@@ -42,6 +42,7 @@ cookbooks/*/test/fixtures/policyfiles/*.lock.json
 
 # Private tfvars file
 **/priv.tfvars
+**/priv.auto.tfvars
 
 # Crash log files
 **/crash.log

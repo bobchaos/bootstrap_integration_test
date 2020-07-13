@@ -50,6 +50,8 @@ data "template_file" "omnibus_ud" {
     bucket_name     = aws_s3_bucket.static_assets.id
     zero_package    = var.omnibus_zero_package
     chef_server_dns = aws_instance.chef-server.private_dns
+    chef_repo_branch = var.chef_repo_branch
+    chef_repo_url = var.chef_repo_url
   }
 }
 
@@ -70,7 +72,22 @@ data "template_cloudinit_config" "omnibus_ud" {
   }
 }
 
-# Get the latest CentOS AMI
+# Windows Omnibus user-data; since there's no cloud-config it's just one big template
+data "template_file" "win_omnibus_ud" {
+  template = file("./templates/omnibus_ud.ps1.tpl")
+
+  vars = {
+    bucket_name     = aws_s3_bucket.static_assets.id
+    zero_package    = var.omnibus_zero_package
+    chef_server_dns = aws_instance.chef-server.private_dns
+    win_omnibus_override_pw = var.win_omnibus_override_pw
+    chef_repo_branch = var.chef_repo_branch
+    chef_repo_url = var.chef_repo_url
+  }
+}
+
+
+# Fetch various AMIs
 data "aws_ami" "centos7" {
   most_recent = true
   owners      = ["679593333241"] # The marketplace
@@ -91,6 +108,25 @@ data "aws_ami" "centos7" {
     # CentOS 7's code. No official Centos 8 AMI published as of this writing :(
     # https://wiki.centos.org/Cloud/AWS for other CentOS product codes
     values = ["aw0evgkw8e5c1q413zgy5pjce"]
+  }
+}
+
+data "aws_ami" "win_2012r2" {
+  most_recent = true
+  owners = ["amazon"]
+  filter {
+    name = "is-public"
+    values = ["true"]
+  }
+
+  filter {
+    name = "name"
+    values = ["Windows_Server-2012-R2_RTM-English-64Bit-Base-*"]
+  }
+
+  filter {
+    name = "platform"
+    values = ["windows"]
   }
 }
 

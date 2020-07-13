@@ -7,8 +7,10 @@ provider "aws" {
 
 locals {
   tags          = merge({ Terraform = "true" }, var.tags)
+  bastion_user  = "centos"
   nix_ami_ids   = [data.aws_ami.nix_os_0.id, data.aws_ami.nix_os_1.id]
   nix_nodes     = [aws_instance.nix_nodes[*].private_ip]
+  win_omnibus_pw = rsadecrypt(aws_instance.win_omnibus.password_data, tls_private_key.ephemeral.private_key_pem)
   win_passwords = [for p in aws_instance.win_nodes[*].password_data : rsadecrypt(p, tls_private_key.ephemeral.private_key_pem)]
   win_nodes     = zipmap(aws_instance.win_nodes[*].private_ip, local.win_passwords)
   all_vpc_subnet_cidrs = concat(module.main_vpc.private_subnets_cidr_blocks, module.main_vpc.public_subnets_cidr_blocks)
@@ -176,17 +178,17 @@ resource aws_instance "chef-server" {
   user_data              = data.template_file.chef_server_ud.rendered
   # Using a static address makes things simpler in kitchen and inspec
   private_ip = "10.0.5.101"
+  connection {
+    user                = "centos"
+    host                = self.private_ip
+    private_key         = tls_private_key.ephemeral.private_key_pem
+    bastion_host        = aws_instance.bastion.public_ip
+    bastion_user        = local.bastion_user
+    bastion_private_key = tls_private_key.ephemeral.private_key_pem
+  }
   provisioner "file" {
     content     = tls_private_key.chef_admin_client.public_key_pem
     destination = "/tmp/chef_admin.pub"
-    connection {
-      user                = "centos"
-      host                = self.private_ip
-      private_key         = tls_private_key.ephemeral.private_key_pem
-      bastion_host        = aws_instance.bastion.public_ip
-      bastion_user        = "centos"
-      bastion_private_key = tls_private_key.ephemeral.private_key_pem
-    }
   }
   # Wait until cloud-init is done setting up Chef and the test user/org
   provisioner "remote-exec" {
@@ -195,14 +197,6 @@ resource aws_instance "chef-server" {
       "sleep 5",
       "done",
     ]
-    connection {
-      user                = "centos"
-      host                = self.private_ip
-      private_key         = tls_private_key.ephemeral.private_key_pem
-      bastion_host        = aws_instance.bastion.public_ip
-      bastion_user        = "centos"
-      bastion_private_key = tls_private_key.ephemeral.private_key_pem
-    }
   }
   root_block_device {
     delete_on_termination = true
@@ -219,56 +213,95 @@ resource aws_instance "omnibus" {
   user_data              = data.template_cloudinit_config.omnibus_ud.rendered
   iam_instance_profile   = aws_iam_instance_profile.bucket_access.name
   # The Chef admin user key to use for all bootstrap operations
+  connection {
+    host                = self.private_ip
+    user                = "centos"
+    private_key         = tls_private_key.ephemeral.private_key_pem
+    bastion_host        = aws_instance.bastion.public_ip
+    bastion_user        = local.bastion_user
+    bastion_private_key = tls_private_key.ephemeral.private_key_pem
+  }
+
   provisioner "file" {
     content     = tls_private_key.chef_admin_client.private_key_pem
     destination = "/tmp/chef_admin.pem"
-    connection {
-      host                = self.private_ip
-      user                = "centos"
-      private_key         = tls_private_key.ephemeral.private_key_pem
-      bastion_host        = aws_instance.bastion.public_ip
-      bastion_user        = "centos"
-      bastion_private_key = tls_private_key.ephemeral.private_key_pem
-    }
   }
   # The ssh key to use when bootstraping Unix-like nodes
   provisioner "file" {
     content     = tls_private_key.ephemeral.private_key_pem
     destination = "/tmp/ephemeral.pem"
-    connection {
-      host                = self.private_ip
-      user                = "centos"
-      private_key         = tls_private_key.ephemeral.private_key_pem
-      bastion_host        = aws_instance.bastion.public_ip
-      bastion_user        = "centos"
-      bastion_private_key = tls_private_key.ephemeral.private_key_pem
-    }
   }
   # Wait for cloud-init to complete before moving on to Inspec
   provisioner "remote-exec" {
     inline = [
       "set -e",
       "chmod 0600 /tmp/ephemeral.pem",
-      "sudo yum install -y git",
-      "git clone --depth 1 -b ${var.chef_repo_branch} ${var.chef_repo_url} /home/centos/chef",
       "until [[ -e /var/lib/cloud/instance/boot-finished ]]; do",
       "sleep 5",
       "done",
     ]
-    connection {
-      user                = "centos"
-      host                = self.private_ip
-      private_key         = tls_private_key.ephemeral.private_key_pem
-      bastion_host        = aws_instance.bastion.public_ip
-      bastion_user        = "centos"
-      bastion_private_key = tls_private_key.ephemeral.private_key_pem
-    }
   }
   depends_on = [aws_instance.chef-server, aws_instance.nix_nodes, aws_instance.win_nodes]
   root_block_device {
     delete_on_termination = true
   }
   tags = merge(var.tags, { "Name" = "omnibus_node" })
+}
+
+resource aws_instance "win_omnibus" {
+  instance_type          = "t3.large"
+  ami                    = data.aws_ami.win_2012r2.id
+
+  # Windows uses the key to encrypt the password data
+  key_name               = aws_key_pair.ephemeral.key_name
+
+  # WinRM doesn't support bastions, so we expose the windows builder directly to the internet
+  # It's going to be destroyed soon anyhow
+  subnet_id              = module.main_vpc.public_subnets[0]
+  associate_public_ip_address = true
+
+  vpc_security_group_ids = [aws_security_group.nodes.id]
+  user_data              = data.template_file.win_omnibus_ud.rendered
+  iam_instance_profile   = aws_iam_instance_profile.bucket_access.name
+
+  connection {
+    type     = "winrm"
+    host     = self.public_ip
+    port     = "5985"
+    user     = "Administrator"
+    # Kitchen-tf doesn't support getting a password via outputs like it does hostnames
+    # So we have a password created externally (by Rake) and fed in here so Inspec can log in
+    password = var.win_omnibus_override_pw
+    insecure = true
+    https    = false
+    timeout  = "20m"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "while (!(Test-Path \"C:\\cloud-init-workdir\\boot-finished\")) { Start-Sleep 10 }"
+    ]
+  }
+
+  # The Chef admin user key to use for all bootstrap operations
+  provisioner "file" {
+    content     = tls_private_key.chef_admin_client.private_key_pem
+    destination = "C:\\chef_admin.pem"
+  }
+
+  depends_on = [aws_instance.chef-server, aws_instance.nix_nodes, aws_instance.win_nodes]
+  root_block_device {
+    delete_on_termination = true
+  }
+  tags = merge(var.tags, { "Name" = "win_omnibus_node" })
+}
+
+resource "aws_route53_record" "win_omnibus" {
+  zone_id = var.r53_zone_id
+  name    = "bootstrap-win-omnibus.${data.aws_route53_zone.this.name}"
+  type    = "A"
+  ttl     = "300"
+  records = [aws_instance.win_omnibus.public_ip]
 }
 
 resource aws_security_group "nodes" {
@@ -280,14 +313,14 @@ resource aws_security_group "nodes" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["10.0.5.0/24", "10.0.10.0/24", "10.0.105.0/24", "10.0.110.0/24"]
+    cidr_blocks = concat(module.main_vpc.private_subnets_cidr_blocks, module.main_vpc.public_subnets_cidr_blocks)
   }
 
   ingress {
     from_port   = 5985
     to_port     = 5986
     protocol    = "tcp"
-    cidr_blocks = ["10.0.5.0/24", "10.0.10.0/24", "10.0.105.0/24", "10.0.110.0/24"]
+    cidr_blocks = concat(module.main_vpc.private_subnets_cidr_blocks, module.main_vpc.public_subnets_cidr_blocks)
   }
 
   egress {
