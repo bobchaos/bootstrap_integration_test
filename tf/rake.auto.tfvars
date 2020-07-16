@@ -1,1 +1,1 @@
-omnibus_zero_package = "/home/bobchaos/repos/bootstrap_integration_test/tf/policy_artifacts/chef_omnibus_builder-32ef74ef062378e90352155f250ab082fd4f098c3562cecd47481e760bad2e6a.zip"
+omnibus_zero_package = "chef_omnibus_builder-32ef74ef062378e90352155f250ab082fd4f098c3562cecd47481e760bad2e6a.zip"

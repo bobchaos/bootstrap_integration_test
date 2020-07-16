@@ -130,6 +130,66 @@ data "aws_ami" "win_2012r2" {
   }
 }
 
+# Deplicates win_2012r2, but it's needed for the count logic and I'd rather keep
+# The omnibus builder's conf decoupled from the the generic win nodes
+data "aws_ami" "win_os_0" {
+  most_recent = true
+  owners = ["amazon"]
+  filter {
+    name = "is-public"
+    values = ["true"]
+  }
+
+  filter {
+    name = "name"
+    values = ["Windows_Server-2012-R2_RTM-English-64Bit-Base-*"]
+  }
+
+  filter {
+    name = "platform"
+    values = ["windows"]
+  }
+}
+
+data "aws_ami" "win_os_1" {
+  most_recent = true
+  owners = ["amazon"]
+  filter {
+    name = "is-public"
+    values = ["true"]
+  }
+
+  filter {
+    name = "name"
+    values = ["Windows_Server-2016-English-Full-Base-*"]
+  }
+
+  filter {
+    name = "platform"
+    values = ["windows"]
+  }
+}
+
+data "aws_ami" "win_os_2" {
+  most_recent = true
+  owners = ["amazon"]
+  filter {
+    name = "is-public"
+    values = ["true"]
+  }
+
+  filter {
+    name = "name"
+    values = ["Windows_Server-2016-English-Full-Base-*"]
+  }
+
+  filter {
+    name = "platform"
+    values = ["windows"]
+  }
+}
+
+
 data "aws_ami" "nix_os_0" { # duplicates centos7, required for count logic
   most_recent = true
   owners      = ["679593333241"] # The marketplace

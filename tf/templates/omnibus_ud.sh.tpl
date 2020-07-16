@@ -27,4 +27,4 @@ chown -R centos:centos /home/centos/.chef
 
 # Get git and clone the repo we'll be building
 sudo yum install -y git
-git clone --depth 1 -b ${var.chef_repo_branch} ${var.chef_repo_url} /home/centos/chef
+git clone --depth 1 -b ${chef_repo_branch} ${chef_repo_url} /home/centos/chef

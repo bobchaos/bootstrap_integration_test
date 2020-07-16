@@ -52,11 +52,12 @@ end
 task :zip_policy do
   # Zip exported policy, then update it's value in auto.tfvars
   policy_data = FFI_Yajl::Parser.parse(IO.read(policy_lockfile_path))
-  package_name = "#{tf_policy_artifacts}/#{policy_data["name"]}-#{policy_data["revision_id"]}.zip"
+  package_name = "#{policy_data["name"]}-#{policy_data["revision_id"]}.zip"
+  package_path = "#{tf_policy_artifacts}/#{package_name}"
 
   Dir.chdir(exported_policy_dir) do
     zip_contents =  FileList["**"]
-    Zip::File.open(package_name, Zip::File::CREATE) do |zipfile|
+    Zip::File.open(package_path, Zip::File::CREATE) do |zipfile|
       zip_contents.each do |f|
         zipfile.add(f, f)
       end

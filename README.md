@@ -1,6 +1,6 @@
 # Chef Infra integration testing
 
-This repo contains everything needed to create an ephemeral environment on AWS containing a Chef Infra Server, an omnibus builder, and multiple sample nodes. All of this is secured in a VPC, and the only way in is a dedicated bastion instance.
+This repo contains everything needed to create an ephemeral environment on AWS containing a Chef Infra Server, an omnibus builder, and multiple sample nodes. All of this is secured in a VPC, and the only way in is a dedicated bastion instance (and a WinRM node :/ couldn't find a way to support bastions without.
 
 It should be treated as a prototype at this time.
 
@@ -10,14 +10,14 @@ Before you begin, ensure you have configured ~/.aws/credentials with an IAM user
 
 All the following instructions are assumed to use the repo's root as starting CWD.
 
-Everything is wrapped by test kitchen. To get it and other dependencies:
+Everything is wrapped by test kitchen and Rake. To get it and other dependencies:
 
 ```ruby
 cd tf
 bundle install
 ```
 
-Next, we need to create `./tf/priv.tfvars` with your `r53_zone_id`. You can also set `omnibus_policy_artifact` if you want to run your own omnibus builder cookbook, or even s cookbook that substitutes the build with pulling and installing a pre-built artifact.
+Next, we need to create `./tf/priv.tfvars` with your `r53_zone_id`. You can also set `omnibus_policy_artifact` if you want to run your own omnibus builder cookbook, or even a cookbook that substitutes the build with pulling and installing a pre-built artifact.
 
 If need be, you can also set your `chef_repo_url` and `chef_repo_branch` in `./tf/priv.tfvars` to build from your desired ref.
 
@@ -38,13 +38,15 @@ In practice, you're likely to have to setup a `data.aws_ami` TF resource to loca
 
 ## Adding new omnibus nodes
 
-The omnibus nodes are managed by (angry)chef and therefor should function pretty universally on new OSes. The script setting up angrychef and fetching the zero package may require adjustements for other *nix systems. There is currently no powershell equivalent to that script.
+The omnibus nodes are managed by (angry)chef and therefor should function pretty universally on new OSes. The script setting up angrychef and fetching the zero package may require adjustements for other *nix systems.
+
+A windows builder and required scripts are also provided
 
 ## Known issues, caveats, TODOs, etc...
 
-As of this writting it only spawns 2 sample Linux nodes, and a single Windows node.
+As of this writting it does not have test nodes for all OSes supported by Chef (altho it covers the broad scenarios of Windows --> *Nix and *Nix --> Windows
 
-Similarly, we only build Chef Infra Client on CentOS, having additional omnibus builders on other OS could have value.
+Similarly, we only build Chef Infra Client on CentOS7 and Windows 2012r2, having additional omnibus builders on other OS could have value.
 
 The current code is very inflexible, but making more parameters into variables can address a lot of that.
 

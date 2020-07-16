@@ -9,8 +9,9 @@ locals {
   tags          = merge({ Terraform = "true" }, var.tags)
   bastion_user  = "centos"
   nix_ami_ids   = [data.aws_ami.nix_os_0.id, data.aws_ami.nix_os_1.id]
+  win_ami_ids   = [data.aws_ami.win_os_0.id, data.aws_ami.win_os_1.id, data.aws_ami.win_os_2.id]
   nix_nodes     = [aws_instance.nix_nodes[*].private_ip]
-  win_omnibus_pw = rsadecrypt(aws_instance.win_omnibus.password_data, tls_private_key.ephemeral.private_key_pem)
+#  win_omnibus_pw = rsadecrypt(aws_instance.win_omnibus.password_data, tls_private_key.ephemeral.private_key_pem)
   win_passwords = [for p in aws_instance.win_nodes[*].password_data : rsadecrypt(p, tls_private_key.ephemeral.private_key_pem)]
   win_nodes     = zipmap(aws_instance.win_nodes[*].private_ip, local.win_passwords)
   all_vpc_subnet_cidrs = concat(module.main_vpc.private_subnets_cidr_blocks, module.main_vpc.public_subnets_cidr_blocks)
@@ -260,7 +261,7 @@ resource aws_instance "win_omnibus" {
   subnet_id              = module.main_vpc.public_subnets[0]
   associate_public_ip_address = true
 
-  vpc_security_group_ids = [aws_security_group.nodes.id]
+  vpc_security_group_ids = [aws_security_group.nodes.id, aws_security_group.win_omnibus.id]
   user_data              = data.template_file.win_omnibus_ud.rendered
   iam_instance_profile   = aws_iam_instance_profile.bucket_access.name
 
@@ -302,6 +303,19 @@ resource "aws_route53_record" "win_omnibus" {
   type    = "A"
   ttl     = "300"
   records = [aws_instance.win_omnibus.public_ip]
+}
+
+resource aws_security_group "win_omnibus" {
+  name_prefix = "win_omnibus"
+  description = "Allows WinRM from world"
+  vpc_id = module.main_vpc.vpc_id
+
+  ingress {
+    from_port   = 5985
+    to_port     = 5986
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
 resource aws_security_group "nodes" {
@@ -350,7 +364,7 @@ resource aws_instance "nix_nodes" {
 resource aws_instance "win_nodes" {
   count                  = 1
   instance_type          = "t3.medium"
-  ami                    = "ami-09f2114fecbe506e2"
+  ami                    = local.win_ami_ids[count.index]
   key_name               = aws_key_pair.ephemeral.key_name
   subnet_id              = module.main_vpc.private_subnets[0]
   vpc_security_group_ids = [aws_security_group.nodes.id]
