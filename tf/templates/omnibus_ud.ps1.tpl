@@ -1,4 +1,4 @@
-#!/bin/bash -e
+<powershell>
 # redirect all output to file
 $ErrorActionPreference="SilentlyContinue"
 Stop-Transcript | out-null
@@ -70,3 +70,4 @@ git clone --depth 1 -b ${chef_repo_branch} ${chef_repo_url} C:\\chef_source
 echo $null > $workdir\boot-finished
 
 Stop-Transcript
+</powershell>

@@ -18,6 +18,9 @@ priv_tfvars_path = 'tf/priv.auto.tfvars'
 # Tie everything together and run the test
 task :run => %w(package_policy win_omnibus_pw_gen run_kitchen)
 
+# Cleanup workspace
+task :clean => %w(clean_policy clean_kitchen)
+
 # Export the policyfile of the omnibus cookbook and zip the results
 # Older versions of Windows don't support tar (without shenanigans)
 task :package_policy => %w(policy_update zip_policy)
@@ -94,5 +97,11 @@ end
 task :run_kitchen do
   Dir.chdir("#{__dir__}/tf") do
     `bundle exec kitchen test`
+  end
+end
+
+task :clean_kitchen do
+  Dir.chdir("#{__dir__}/tf") do
+    `bundle exec kitchen destroy`
   end
 end

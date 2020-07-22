@@ -270,8 +270,6 @@ resource aws_instance "win_omnibus" {
     host     = self.public_ip
     port     = "5985"
     user     = "Administrator"
-    # Kitchen-tf doesn't support getting a password via outputs like it does hostnames
-    # So we have a password created externally (by Rake) and fed in here so Inspec can log in
     password = var.win_omnibus_override_pw
     insecure = true
     https    = false
