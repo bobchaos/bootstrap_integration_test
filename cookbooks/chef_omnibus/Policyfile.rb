@@ -14,8 +14,9 @@ run_list 'chef_omnibus::default'
 
 # Specify a custom source for a single cookbook:
 cookbook 'chef_omnibus', path: '.'
-cookbook 'omnibus'
+cookbook 'omnibus', '~> 5.7.2'
 cookbook 'build-essential'
+cookbook 'winrm', '~> 3.0.1'
 
 default['chef_omnibus']['chef_repo_address'] = 'https://gitlab.com/cinc-project/chef.git'
 default['chef_omnibus']['branch'] = 'dist_bootstrap'

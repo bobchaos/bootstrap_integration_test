@@ -62,6 +62,9 @@ refreshenv
 aws s3 cp s3://${bucket_name}/${zero_package} .
 Unzip "$workdir\${zero_package}" "$workdir"
 
+# Clone the repo to build
+git clone --depth 1 -b ${chef_repo_branch} ${chef_repo_url} C:\\chef_source
+
 # Run the package with angrychef, since it's building chef
 $env:CHEF_LICENSE="accept-no-persist"
 chef-client -z
@@ -71,9 +74,6 @@ knife ssl fetch --server_url https://${chef_server_dns}/organizations/fake
 
 # Set the Windows Admin password since we can't pass it from tf outputs to inspec in kitchen-tf (yet)
 ([adsi]"WinNT://$env:ComputerName/Administrator").SetPassword('${win_omnibus_override_pw}')
-
-# Clone the repo to build
-git clone --depth 1 -b ${chef_repo_branch} ${chef_repo_url} C:\\chef_source
 
 echo $null > $workdir\boot-finished
 

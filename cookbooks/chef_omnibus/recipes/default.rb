@@ -20,3 +20,5 @@ sudo 'centos' do
   nopasswd true
   user 'centos'
 end
+
+winrm_listener_config 'default' if platform_family?('windows')
