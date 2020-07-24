@@ -1,16 +1,4 @@
 <powershell>
-# Some functions
-# A method for extracting zip files that should work on older powershell
-# I probably should have just put more effort into tar support at this point :P
-# The rakefile would look a lot less insane too
-Add-Type -AssemblyName System.IO.Compression.FileSystem
-function Unzip
-{
-    param([string]$zipfile, [string]$outpath)
-
-    [System.IO.Compression.ZipFile]::ExtractToDirectory($zipfile, $outpath)
-}
-
 # redirect all output to file
 $ErrorActionPreference="SilentlyContinue"
 Stop-Transcript | out-null
@@ -52,6 +40,7 @@ Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
 
 choco install awscli -y
 choco install git -y
+choco install 7zip -y
 
 # Get angrychef from omnitruck
 . { iwr -useb https://omnitruck.chef.io/install.ps1 } | iex; install -project angrychef
@@ -60,14 +49,14 @@ refreshenv
 
 # Get the zero package from S3
 aws s3 cp s3://${bucket_name}/${zero_package} .
-Unzip "$workdir\${zero_package}" "$workdir"
+7z.exe x "$workdir\${zero_package}" -so | 7z x -aoa -si -ttar -o"."
 
 # Clone the repo to build
 git clone --depth 1 -b ${chef_repo_branch} ${chef_repo_url} C:\\chef_source
 
 # Run the package with angrychef, since it's building chef
 $env:CHEF_LICENSE="accept-no-persist"
-chef-client -z
+C:\opscode\angrychef\bin\chef-client.bat -z
 
 # Get the server cert
 knife ssl fetch --server_url https://${chef_server_dns}/organizations/fake

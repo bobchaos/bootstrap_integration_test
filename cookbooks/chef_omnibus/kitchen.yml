@@ -5,7 +5,7 @@ driver:
   block_device_mappings:
     - device_name: /dev/sda1
       ebs:
-        volume_size: 8
+        volume_size: 30
         delete_on_termination: true
 
 provisioner:
@@ -20,9 +20,12 @@ verifier:
 
 platforms:
   - name: centos-7
+  - name: windows-2012r2
 
 suites:
   - name: default
+    includes:
+      - centos-7
     attributes:
       omnibus:
         toolchain_channel: stable
@@ -37,4 +40,29 @@ suites:
     verifier:
       inspec_tests:
         - test/integration/default
+
+  - name: windows
+    includes:
+      - windows-2012r2
+    lifecycle:
+      # simulate Terraform installing git and cloning repo
+      pre_converge:
+        - remote: |
+            $env:ChocolateyInstall = Convert-Path "$((Get-Command choco).Path)\..\..";
+            Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1";
+            choco install git -y;
+            git clone https://github.com/chef/chef.git C:\chef_source;
+    verifier:
+      inspec_tests:
+        - test/integration/default
     attributes:
+      chef_omnibus:
+        chef_repo_address: 'https://gitlab.com/cinc-project/chef.git'
+        branch: 'dist_bootstrap'
+      omnibus:
+        build_dir: 'C:\\chef_source\\omnibus'
+        build_user_home: 'C:\\'
+        build_user: 'Administrator'
+        toolchain_channel: stable
+        toolchain_version: latest
+        install_dir: C:/opscode/chef

@@ -1,1 +1,1 @@
-omnibus_zero_package = "chef_omnibus_builder-32ef74ef062378e90352155f250ab082fd4f098c3562cecd47481e760bad2e6a.zip"
+omnibus_zero_package = "chef_omnibus_builder-44a66e95fc59f263f554e653216d9b2502710c79f7c49d0c535df3dcd5baa2cc.tgz"
